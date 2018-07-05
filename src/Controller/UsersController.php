@@ -154,7 +154,7 @@ class UsersController extends AppController
 				if ($images_table->save($info)) {
 					copy($imageData['tmp_name'],$thumbImageFolder.$imageData['name']);
 					move_uploaded_file($imageData['tmp_name'],$filename.$imageData['name']); // upload image into folder
-					$this->__generateThumbnail($imageData,'C:\xampp\htdocs\gaurav\webroot\img\upload_pics_thumb/'.$imageData['name']);
+					$this->__generateThumbnail($imageData,$thumbImageFolder.$imageData['name']);
 				}
 			}
 			

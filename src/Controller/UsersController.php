@@ -132,7 +132,11 @@ class UsersController extends AppController
 			if (!file_exists($filename)) {
 				mkdir($filename, 0777, true);
 			}
-			
+			// create thumb image folder if not exist
+			$thumbImageFolder = 'img/upload_pics_thumb/';
+			if (!file_exists($thumbImageFolder)) {
+				mkdir($thumbImageFolder, 0777, true);
+			}
 			// table register
 			$images_table = TableRegistry::get('images');	
 			
@@ -147,10 +151,10 @@ class UsersController extends AppController
 				$info->image_name = $imageData['name'];
 				$info->user_id = $uid;
 				
-				//$filename .= $imageData['name'];
-				
 				if ($images_table->save($info)) {
+					copy($imageData['tmp_name'],$thumbImageFolder.$imageData['name']);
 					move_uploaded_file($imageData['tmp_name'],$filename.$imageData['name']); // upload image into folder
+					$this->__generateThumbnail($imageData,'C:\xampp\htdocs\gaurav\webroot\img\upload_pics_thumb/'.$imageData['name']);
 				}
 			}
 			
@@ -159,19 +163,44 @@ class UsersController extends AppController
 		}
 	}
 	
-	private function __generateThumbnail($img, $width, $height, $quality = 90)
+	private function __generateThumbnail($img,$upload_image)
 	{
-		if (is_file($img)) {
-			$imagick = new Imagick(realpath($img));
-			$imagick->setImageFormat('jpeg');
-			$imagick->setImageCompression(Imagick::COMPRESSION_JPEG);
-			$imagick->setImageCompressionQuality($quality);
-			$imagick->thumbnailImage($width, $height, false, false);
-			$filename_no_ext = reset(explode('.', $img));
-			if (file_put_contents($filename_no_ext . '_thumb' . '.jpg', $imagick) === false) {
-				throw new Exception("Could not put contents.");
-			}
-			return true;
+		//thumbnail creation
+		$file_ext = explode('.',$img['tmp_name']);
+		list($width,$height) = getimagesize($upload_image);
+		$thumb_create = imagecreatetruecolor(100,100);
+		switch($file_ext){
+			case 'jpg':
+				$source = imagecreatefromjpeg($upload_image);
+				break;
+			case 'jpeg':
+				$source = imagecreatefromjpeg($upload_image);
+				break;
+
+			case 'png':
+				$source = imagecreatefrompng($upload_image);
+				break;
+			case 'gif':
+				$source = imagecreatefromgif($upload_image);
+				break;
+			default:
+				$source = imagecreatefromjpeg($upload_image);
 		}
+
+		imagecopyresized($thumb_create,$source,0,0,0,0,100,100,100,100);
+		switch($file_ext){
+			case 'jpg' || 'jpeg':
+				imagejpeg($thumb_create,$upload_image,100);
+				break;
+			case 'png':
+				imagepng($thumb_create,$upload_image,100);
+				break;
+
+			case 'gif':
+				imagegif($thumb_create,$upload_image,100);
+				break;
+			default:
+				imagejpeg($thumb_create,$upload_image,100);
+		}		
 	}
 }
